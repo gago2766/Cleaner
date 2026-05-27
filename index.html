@@ -313,6 +313,13 @@
                 </div>
 
                 <div class="control-group">
+                    <label>تكبير / تصغير</label>
+                    <button class="zoom-btn" id="zoomIn">🔍+</button>
+                    <button class="zoom-btn" id="zoomOut">🔍-</button>
+                    <button class="zoom-btn" id="zoomReset">↺ ضبط</button>
+                </div>
+
+                <div class="control-group">
                     <label>التراجع والحفظ</label>
                     <button class="history-btn" id="undoBtn" disabled>↩️ تراجع</button>
                     <button class="history-btn" id="redoBtn" disabled>↪️ إعادة</button>
@@ -692,6 +699,13 @@
         }
 
         // === تفريغ وإعادة الأصل ===
+        function updateBoundingBox(x, y) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+        }
+
         function resetSelection() {
             if (canvas.width) {
                 globalSelectedMap = new Uint8Array(canvas.width * canvas.height);
