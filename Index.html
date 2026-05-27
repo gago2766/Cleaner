@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة تبييض المانها الاحترافية + AI + محرر النصوص TypeR</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+        }
+        h1 {
+            font-size: 15px;
+            margin: 5px 0;
+            color: #1e293b;
+            flex-shrink: 0;
+        }
+        
+        /* اللوحة الرئيسية المقسمة */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        /* مساحة العمل والصورة (اليمين) */
+        .workspace-section {
+            flex: 2.5;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            border-left: 2px solid #cbd5e1;
+        }
+        
+        /* لوحة محرر النصوص والأنماط TypeR (اليسار) */
+        .typesetter-section {
+            flex: 1.2;
+            min-width: 320px;
+            max-width: 450px;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            padding: 10px;
+            overflow-y: auto;
+            height: 100%;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.05);
+        }
+
+        .controls-panel {
+            background: white;
+            padding: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            width: 100%;
+            text-align: right;
+            overflow-x: auto;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .control-group {
+            display: inline-block;
+            margin: 4px 6px;
+            vertical-align: middle;
+            text-align: right;
+            white-space: normal;
+        }
+        label {
+            font-weight: bold;
+            font-size: 11px;
+            display: block;
+            margin-bottom: 3px;
+            color: #333;
+        }
+        button, input[type="file"], input[type="text"], input[type="password"], select, textarea {
+            padding: 5px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background: #fff;
+            transition: all 0.2s;
+        }
+        input[type="text"], input[type="password"] {
+            cursor: text;
+            width: 120px;
+        }
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .tool-btn {
+            font-weight: bold;
+            border: 2px solid #007bff;
+            color: #007bff;
+            background: white;
+        }
+        .tool-btn.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .action-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+        .action-btn:hover {
+            background-color: #218838;
+        }
+        .action-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .ai-btn {
+            background-color: #6f42c1;
+            color: white;
+            border: none;
+            font-weight: bold;
+            position: relative;
+        }
+        .ai-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .danger-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+        }
+        .zoom-btn {
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            font-weight: bold;
+            min-width: 30px;
+        }
+        .history-btn {
+            background-color: #e2e8f0;
+            color: #334155;
+            font-weight: bold;
+            border: 1px solid #cbd5e1;
+        }
+        .history-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .download-btn {
+            background-color: #0d9488;
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+        .api-settings {
+            background: #f8f9fa;
+            border: 1px dashed #007bff;
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 6px;
+            display: none;
+            white-space: normal;
+        }
+        .canvas-container {
+            flex: 1;
+            width: 100%;
+            overflow: auto;
+            border-top: 2px solid #ccc;
+            background: #cbd5e1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        #canvas-wrapper {
+            position: relative;
+            transform-origin: top left;
+            display: inline-block;
+            margin: 10px;
+        }
+        canvas {
+            display: block;
+            cursor: crosshair;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            background: white;
+        }
+        #status-bar {
+            font-size: 12px;
+            color: #222;
+            font-weight: bold;
+            text-align: center;
+            min-height: 25px;
+            padding: 4px;
+            background: #e9ecef;
+            border-top: 1px solid #dee2e6;
+            flex-shrink: 0;
+        }
+        
+        /* تجميل عناصر لوحة الأنماط والنصوص */
+        .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin: 10px 0 5px 0;
+            text-align: right;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 3px;
+            color: #1e293b;
+        }
+        .script-area {
+            width: 100%;
+            height: 120px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        .lines-list {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            background: #f8fafc;
+            padding: 2px;
+            margin-bottom: 8px;
+        }
+        .line-item {
+            padding: 4px 6px;
+            font-size: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            text-align: right;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .line-item:hover {
+            background: #e2e8f0;
+        }
+        .line-item.active {
+            background: #3b82f6;
+            color: white;
+            font-weight: bold;
+        }
+        .style-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 8px;
+            background: #fafafa;
+        }
+        .style-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .style-row label {
+            margin: 0;
+        }
+        
+        /* تحسينات الهواتف المحمولة */
+        @media (max-width: 900px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            .typesetter-section {
+                max-width: 100%;
+                height: 40vh;
+                border-top: 2px solid #cbd5e1;
+                border-left: none;
+            }
+            .workspace-section {
+                height: 60vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>محرر تبييض المانها الاحترافي + ترميم AI + كتابة النصوص المتكاملة (TypeR)</h1>
+
+    <div class="main-layout">
+        
+        <!-- مساحة العمل والصورة (اليمين) -->
+        <div class="workspace-section">
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label>تحميل المانها</label>
+                    <input type="file" id="upload" accept="image/*">
+                </div>
+
+                <div class="control-group">
+                    <label>أداة التحديد</label>
+                    <button class="tool-btn active" id="toolWand">🪄 عصا</button>
+                    <button class="tool-btn" id="toolBox">⬜ مستطيل</button>
+                    <button class="tool-btn" id="toolLasso">🪢 حبل</button>
+                </div>
+
+                <div class="control-group" id="toleranceGroup">
+                    <label>حساسية العصا (<span id="toleranceVal" class="slider-val">40</span>)</label>
+                    <input type="range" id="tolerance" min="5" max="150" value="40" style="width: 70px;">
+                </div>
+
+                <div class="control-group">
+                    <label>التراجع والحفظ</label>
+                    <button class="history-btn" id="undoBtn" disabled>↩️ تراجع</button>
+                    <button class="history-btn" id="redoBtn" disabled>↪️ إعادة</button>
+                    <button class="download-btn" id="downloadBtn">💾 تحميل الصورة</button>
+                </div>
+
+                <div class="control-group">
+                    <label>العمليات الفنية</label>
+                    <button class="action-btn" id="whitenBtn" disabled>⚪ تبييض الفقاعة</button>
+                    <button class="ai-btn" id="aiInpaintBtn" disabled>🤖 ترميم AI</button>
+                    <button class="danger-btn" id="clearSelectionBtn" disabled>❌ إلغاء التحديد</button>
+                    <button id="resetBtn" style="background: #6c757d; color: white;">↺ استعادة الأصل</button>
+                </div>
+
+                <div class="control-group" style="display: block; margin-top: 5px; text-align: center;">
+                    <button id="toggleApiSettingsBtn" style="background: #e2e8f0; font-weight: bold;">⚙️ إعدادات Agent Router API</button>
+                </div>
+
+                <div class="api-settings" id="apiSettingsArea">
+                    <div class="control-group">
+                        <label>مفتاح API</label>
+                        <input type="password" id="apiKey" placeholder="sk-..." style="width: 140px;">
+                    </div>
+                    <div class="control-group">
+                        <label>Endpoint</label>
+                        <input type="text" id="apiEndpoint" value="https://api.agentrouter.org/v1/images/edits" style="width: 220px;">
+                    </div>
+                    <div class="control-group">
+                        <label>النموذج</label>
+                        <input type="text" id="apiModel" value="stabilityai/stable-diffusion-xl-inpainting" style="width: 160px;">
+                    </div>
+                    <div class="control-group">
+                        <label>Prompt (الوصف)</label>
+                        <input type="text" id="apiPrompt" value="clean background, manga screentone, seamless, high quality, no text" style="width: 200px;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <div id="canvas-wrapper">
+                    <canvas id="canvas"></canvas>
+                </div>
+            </div>
+            
+            <div id="status-bar">يرجى رفع صورة مانها للبدء...</div>
+        </div>
+
+        <!-- لوحة محرر النصوص والأنماط TypeR (اليسار) -->
+        <div class="typesetter-section">
+            
+            <!-- لوحة إدارة النص البرمجي ومخطط العمل -->
+            <div class="section-title">✍️ محرر ومخطط النص (TypeR Script)</div>
+            <textarea class="script-area" id="scriptArea" placeholder="أدخل النص المترجم هنا... كل سطر يمثل فقاعة كلام.&#10;مثال:&#10;[عادي] مرحباً بالجميع!&#10;[صراخ] توقفوا عن هذا!&#10;[مؤثر] بوم!"></textarea>
+            
+            <div class="style-row" style="margin-top: 5px;">
+                <button id="parseScriptBtn" style="width: 100%; background: #007bff; color: white; font-weight: bold;">📊 تحليل وتجزئة الأسطر</button>
+            </div>
+
+            <label>قائمة الأسطر المكتشفة:</label>
+            <div class="lines-list" id="linesList">
+                <div style="text-align: center; color: #888; padding: 10px; font-size: 11px;">الصق نصًا واضغط على "تحليل" للبدء</div>
+            </div>
+
+            <div class="style-row">
+                <button class="zoom-btn" id="prevLineBtn">⇧ السطر السابق</button>
+                <span id="activeLineIndicator" style="font-weight: bold; font-size: 12px; color: #1e293b;">لا يوجد سطر نشط</span>
+                <button class="zoom-btn" id="nextLineBtn">⇩ السطر التالي</button>
+            </div>
+
+            <!-- لوحة محرر الأنماط الفنية -->
+            <div class="section-title">🎨 مدير أنماط النصوص (TypeR Styles)</div>
+            
+            <div class="style-card">
+                <div class="style-row">
+                    <label>النمط النشط:</label>
+                    <select id="styleSelector" style="width: 60%;"></select>
+                </div>
+                
+                <div class="style-row">
+                    <label>حجم الخط الافتراضي:</label>
+                    <input type="number" id="styleFontSize" value="16" style="width: 70px;">
+                </div>
+
+                <div class="style-row">
+                    <label>نوع الخط (Font Family):</label>
+                    <select id="styleFontFamily" style="width: 60%;">
+                        <option value="Arial">Arial</option>
+                        <option value="Impact">Impact (للصراخ)</option>
+                        <option value="Comic Sans MS">Comic Sans MS (للمؤثرات)</option>
+                        <option value="Tahoma">Tahoma</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                    </select>
+                </div>
+
+                <div class="style-row">
+                    <label>لون النص:</label>
+                    <input type="color" id="styleTextColor" value="#000000">
+                </div>
+
+                <div class="style-row">
+                    <label>المحاذاة:</label>
+                    <select id="styleAlign" style="width: 100px;">
+                        <option value="center">وسط</option>
+                        <option value="right">يمين</option>
+                        <option value="left">يسار</option>
+                    </select>
+                </div>
+
+                <div class="style-row">
+                    <label>خيارات فنية:</label>
+                    <div>
+                        <label style="display: inline-block; margin-left: 10px;"><input type="checkbox" id="styleBold"> عريض</label>
+                        <label style="display: inline-block;"><input type="checkbox" id="styleItalic"> مائل</label>
+                    </div>
+                </div>
+
+                <div class="style-row">
+                    <label>الوسم المرتبط (Tag Prefix):</label>
+                    <input type="text" id="stylePrefix" placeholder="مثال: عادي" style="width: 100px;">
+                </div>
+                
+                <div class="style-row" style="margin-top: 5px;">
+                    <button id="saveCurrentStyleBtn" style="background: #2563eb; color: white; width: 48%;">حفظ التغييرات</button>
+                    <button id="addNewStyleBtn" style="background: #059669; color: white; width: 48%;">إضافة كنمط جديد</button>
+                </div>
+            </div>
+
+            <!-- مقياس الخط الفوري وتحميل النص إلى الكانفاس -->
+            <div class="section-title">✍️ تطبيق وإدراج النص</div>
+            <div class="style-card" style="background: #eff6ff; border-color: #bfdbfe;">
+                <div class="style-row">
+                    <label>مقياس حجم الخط الفوري (<span id="textScaleVal">1.0</span>):</label>
+                    <input type="range" id="textScaleSlider" min="0.5" max="2.5" step="0.1" value="1.0" style="width: 100px;">
+                </div>
+                <div class="hint" style="margin-bottom: 8px;">يتحكم بتصغير أو تكبير الخط فوتوغرافياً على الكانفاس لتلائم فقاعات الحوار.</div>
+                
+                <button class="action-btn" id="typesetWhitenBtn" disabled style="width: 100%; height: 35px; font-size: 13px; background: #2563eb; margin-bottom: 6px;">
+                    ✍️ تبييض المنطقة وكتابة النص
+                </button>
+                <button class="action-btn" id="typesetOnlyBtn" disabled style="width: 100%; height: 30px; font-size: 11px; background: #0d9488;">
+                    ✍️ كتابة النص فقط (دون تبييض)
+                </button>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        // === تهيئة عناصر الكانفاس والصور ===
+        const upload = document.getElementById('upload');
+        const canvas = document.getElementById('canvas');
+        const canvasWrapper = document.getElementById('canvas-wrapper');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        const toleranceSlider = document.getElementById('tolerance');
+        const toleranceVal = document.getElementById('toleranceVal');
+        const toleranceGroup = document.getElementById('toleranceGroup');
+        
+        const toolWand = document.getElementById('toolWand');
+        const toolBox = document.getElementById('toolBox');
+        const toolLasso = document.getElementById('toolLasso');
+        
+        const zoomIn = document.getElementById('zoomIn');
+        const zoomOut = document.getElementById('zoomOut');
+        const zoomReset = document.getElementById('zoomReset');
+        
+        const whitenBtn = document.getElementById('whitenBtn');
+        const aiInpaintBtn = document.getElementById('aiInpaintBtn');
+        const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const statusBar = document.getElementById('status-bar');
+        
+        const toggleApiSettingsBtn = document.getElementById('toggleApiSettingsBtn');
+        const apiSettingsArea = document.getElementById('apiSettingsArea');
+
+        // === تهيئة عناصر لوحة النصوص TypeR ===
+        const scriptArea = document.getElementById('scriptArea');
+        const parseScriptBtn = document.getElementById('parseScriptBtn');
+        const linesList = document.getElementById('linesList');
+        const prevLineBtn = document.getElementById('prevLineBtn');
+        const nextLineBtn = document.getElementById('nextLineBtn');
+        const activeLineIndicator = document.getElementById('activeLineIndicator');
+        
+        const styleSelector = document.getElementById('styleSelector');
+        const styleFontSize = document.getElementById('styleFontSize');
+        const styleFontFamily = document.getElementById('styleFontFamily');
+        const styleTextColor = document.getElementById('styleTextColor');
+        const styleAlign = document.getElementById('styleAlign');
+        const styleBold = document.getElementById('styleBold');
+        const styleItalic = document.getElementById('styleItalic');
+        const stylePrefix = document.getElementById('stylePrefix');
+        const saveCurrentStyleBtn = document.getElementById('saveCurrentStyleBtn');
+        const addNewStyleBtn = document.getElementById('addNewStyleBtn');
+        
+        const textScaleSlider = document.getElementById('textScaleSlider');
+        const textScaleVal = document.getElementById('textScaleVal');
+        const typesetWhitenBtn = document.getElementById('typesetWhitenBtn');
+        const typesetOnlyBtn = document.getElementById('typesetOnlyBtn');
+
+        let originalImageData = null; 
+        let currentImageData = null;  
+        let globalSelectedMap = null; 
+        let globalSelectedIndices = []; 
+        let zoomScale = 1.0;
+        let activeTool = 'wand';
+
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        let isDrawing = false;
+        let startX = 0, startY = 0;
+        let currentX = 0, currentY = 0;
+        let lassoPoints = [];
+
+        // إدارة المحفوظات (تبييض + كتابة)
+        let undoStack = [];
+        let redoStack = [];
+
+        // قائمة الأنماط المتوفرة محلياً (مع الحفظ والتحقق من سلامة البيانات في لوكال ستوريج)
+        let styles = [
+            { id: 'regular', name: 'عادي (Regular)', fontSize: 16, fontFamily: 'Arial', textColor: '#000000', align: 'center', bold: false, italic: false, prefix: 'عادي' },
+            { id: 'scream', name: 'صراخ (Scream)', fontSize: 24, fontFamily: 'Impact', textColor: '#000000', align: 'center', bold: true, italic: false, prefix: 'صراخ' },
+            { id: 'sfx', name: 'مؤثر صوتي (SFX)', fontSize: 20, fontFamily: 'Comic Sans MS', textColor: '#ff0000', align: 'center', bold: true, italic: true, prefix: 'مؤثر' }
+        ];
+
+        try {
+            const storedStyles = localStorage.getItem('typeR_styles');
+            if (storedStyles) {
+                styles = JSON.parse(storedStyles);
+            }
+        } catch (e) {
+            console.warn("Could not load styles from localStorage, using default styles.", e);
+        }
+
+        let scriptLines = [];
+        let activeLineIndex = -1;
+
+        // === إدارة المحفوظات للتراجع والإعادة ===
+        function saveState() {
+            if (!currentImageData) return;
+            const copy = ctx.createImageData(canvas.width, canvas.height);
+            copy.data.set(currentImageData.data);
+            undoStack.push(copy);
+            
+            if (undoStack.length > 30) {
+                undoStack.shift();
+            }
+            redoStack = [];
+            updateUndoRedoButtons();
+        }
+
+        function updateUndoRedoButtons() {
+            undoBtn.disabled = (undoStack.length === 0);
+            redoBtn.disabled = (redoStack.length === 0);
+        }
+
+        undoBtn.addEventListener('click', () => {
+            if (undoStack.length === 0) return;
+            const copy = ctx.createImageData(canvas.width, canvas.height);
+            copy.data.set(currentImageData.data);
+            redoStack.push(copy);
+
+            currentImageData = undoStack.pop();
+            ctx.putImageData(currentImageData, 0, 0);
+            resetSelection();
+            updateUndoRedoButtons();
+            statusBar.innerText = "↩️ تم التراجع عن الخطوة الأخيرة.";
+        });
+
+        redoBtn.addEventListener('click', () => {
+            if (redoStack.length === 0) return;
+            const copy = ctx.createImageData(canvas.width, canvas.height);
+            copy.data.set(currentImageData.data);
+            undoStack.push(copy);
+
+            currentImageData = redoStack.pop();
+            ctx.putImageData(currentImageData, 0, 0);
+            resetSelection();
+            updateUndoRedoButtons();
+            statusBar.innerText = "↪️ تم إعادة تطبيق الخطوة.";
+        });
+
+        // === منطق حفظ الصورة ===
+        downloadBtn.addEventListener('click', () => {
+            if (!currentImageData) {
+                alert("⚠️ يرجى رفع صورة وتعديلها أولاً!");
+                return;
+            }
+            ctx.putImageData(currentImageData, 0, 0);
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'manga_cleaned_' + Date.now() + '.png';
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            statusBar.innerText = "💾 تم تحميل الصورة النهائية بنجاح!";
+            if (globalSelectedIndices.length > 0) showPreviewSelection();
+        });
+
+        // === أداة زووم تلقائي وباقي الأدوات ===
+        function adjustDefaultZoom() {
+            if (!canvas.width) return;
+            const container = document.querySelector('.canvas-container');
+            if (!container) return;
+
+            // تأمين الحسابات في حال كانت أبعاد الحاوية صفرية عند التحميل الأولي
+            const containerWidth = container.clientWidth > 40 ? container.clientWidth - 40 : 200;
+            const containerHeight = container.clientHeight > 40 ? container.clientHeight - 40 : 200;
+
+            const scaleX = containerWidth / canvas.width;
+            const scaleY = containerHeight / canvas.height;
+            
+            // التأكيد على وضع مقياس موجب وآمن
+            zoomScale = Math.max(0.1, Math.min(scaleX, scaleY, 1.0));
+            updateZoomStyles();
+        }
+
+        function updateZoomStyles() {
+            canvasWrapper.style.transform = `scale(${zoomScale})`;
+            canvasWrapper.style.width = (canvas.width * zoomScale) + 'px';
+            canvasWrapper.style.height = (canvas.height * zoomScale) + 'px';
+        }
+
+        zoomIn.addEventListener('click', () => { if (zoomScale < 4.0) { zoomScale += 0.2; updateZoomStyles(); } });
+        zoomOut.addEventListener('click', () => { if (zoomScale > 0.1) { zoomScale -= 0.2; updateZoomStyles(); } });
+        zoomReset.addEventListener('click', () => { adjustDefaultZoom(); });
+        window.addEventListener('resize', adjustDefaultZoom);
+
+        // === إدارة أدوات التحديد ===
+        function setActiveTool(tool) {
+            activeTool = tool;
+            [toolWand, toolBox, toolLasso].forEach(btn => btn.classList.remove('active'));
+            
+            if (tool === 'wand') {
+                toolWand.classList.add('active');
+                toleranceGroup.style.display = 'inline-block';
+                statusBar.innerText = "🪄 أداة العصا: انقر على خلفية فقاعة الحوار لتحديد النص برمجياً";
+            } else if (tool === 'box') {
+                toolBox.classList.add('active');
+                toleranceGroup.style.display = 'none';
+                statusBar.innerText = "⬜ أداة المستطيل: اسحب لرسم منطقة حوار للكتابة أو التبييض";
+            } else if (tool === 'lasso') {
+                toolLasso.classList.add('active');
+                toleranceGroup.style.display = 'none';
+                statusBar.innerText = "🪢 أداة الحبل: ارسم حول المؤثرات الصوتية المعقدة";
+            }
+        }
+
+        toolWand.addEventListener('click', () => setActiveTool('wand'));
+        toolBox.addEventListener('click', () => setActiveTool('box'));
+        toolLasso.addEventListener('click', () => setActiveTool('lasso'));
+
+        toleranceSlider.addEventListener('input', (e) => {
+            toleranceVal.innerText = e.target.value;
+        });
+
+        // === تبييض عادي ===
+        whitenBtn.addEventListener('click', () => {
+            if (globalSelectedIndices.length === 0) return;
+            saveState();
+            whitenSelectedArea();
+            resetSelection();
+            statusBar.innerText = "✅ تم تبييض الفقاعة المحددة بالكامل.";
+        });
+
+        function whitenSelectedArea() {
+            const data = currentImageData.data;
+            for (let i = 0; i < globalSelectedIndices.length; i++) {
+                const idx = globalSelectedIndices[i];
+                data[idx] = 255;     
+                data[idx + 1] = 255; 
+                data[idx + 2] = 255; 
+            }
+            ctx.putImageData(currentImageData, 0, 0);
+        }
+
+        // === تفريغ وإعادة الأصل ===
+        function resetSelection() {
+            if (canvas.width) {
+                globalSelectedMap = new Uint8Array(canvas.width * canvas.height);
+            }
+            globalSelectedIndices = [];
+            minX = Infinity; maxX = -Infinity; minY = Infinity; maxY = -Infinity;
+            [whitenBtn, aiInpaintBtn, clearSelectionBtn, typesetWhitenBtn, typesetOnlyBtn].forEach(btn => btn.disabled = true);
+        }
+
+        clearSelectionBtn.addEventListener('click', () => {
+            resetSelection();
+            ctx.putImageData(currentImageData, 0, 0);
+            statusBar.innerText = "❌ تم إلغاء التحديد الحالى.";
+        });
+
+        resetBtn.addEventListener('click', () => {
+            if (originalImageData) {
+                saveState();
+                currentImageData = ctx.createImageData(originalImageData);
+                currentImageData.data.set(originalImageData.data);
+                ctx.putImageData(currentImageData, 0, 0);
+                resetSelection();
+                statusBar.innerText = "↺ تم استعادة الصورة الأصلية بنجاح.";
+            }
+        });
+
+        // === محرك الـ API وإعداداته ===
+        toggleApiSettingsBtn.addEventListener('click', () => {
+            apiSettingsArea.style.display = apiSettingsArea.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // === إدارة معالجة وتحليل النصوص (TypeR Logic) ===
+        
+        function loadStylesIntoSelector() {
+            styleSelector.innerHTML = '';
+            styles.forEach((style, index) => {
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.innerText = style.name;
+                styleSelector.appendChild(opt);
+            });
+            loadSelectedStyleToInputs();
+        }
+
+        function loadSelectedStyleToInputs() {
+            const style = styles[styleSelector.value];
+            if (!style) return;
+            styleFontSize.value = style.fontSize;
+            styleFontFamily.value = style.fontFamily;
+            styleTextColor.value = style.textColor;
+            styleAlign.value = style.align || 'center';
+            styleBold.checked = style.bold;
+            styleItalic.checked = style.italic;
+            stylePrefix.value = style.prefix || '';
+        }
+
+        styleSelector.addEventListener('change', loadSelectedStyleToInputs);
+
+        saveCurrentStyleBtn.addEventListener('click', () => {
+            const idx = styleSelector.value;
+            if (styles[idx]) {
+                styles[idx].fontSize = parseInt(styleFontSize.value, 10);
+                styles[idx].fontFamily = styleFontFamily.value;
+                styles[idx].textColor = styleTextColor.value;
+                styles[idx].align = styleAlign.value;
+                styles[idx].bold = styleBold.checked;
+                styles[idx].italic = styleItalic.checked;
+                styles[idx].prefix = stylePrefix.value;
+                localStorage.setItem('typeR_styles', JSON.stringify(styles));
+                statusBar.innerText = `💾 تم حفظ تغييرات النمط: ${styles[idx].name}`;
+                loadStylesIntoSelector();
+            }
+        });
+
+        addNewStyleBtn.addEventListener('click', () => {
+            const name = prompt("أدخل اسم النمط الجديد:", "نمط جديد");
+            if (!name) return;
+            const newStyle = {
+                id: 'custom_' + Date.now(),
+                name: name,
+                fontSize: parseInt(styleFontSize.value, 10),
+                fontFamily: styleFontFamily.value,
+                textColor: styleTextColor.value,
+                align: styleAlign.value,
+                bold: styleBold.checked,
+                italic: styleItalic.checked,
+                prefix: stylePrefix.value
+            };
+            styles.push(newStyle);
+            localStorage.setItem('typeR_styles', JSON.stringify(styles));
+            loadStylesIntoSelector();
+            styleSelector.value = styles.length - 1;
+            loadSelectedStyleToInputs();
+            statusBar.innerText = `➕ تم إضافة النمط الجديد بنجاح.`;
+        });
+
+        // تجزئة وتحليل النص
+        parseScriptBtn.addEventListener('click', () => {
+            const text = scriptArea.value;
+            if (!text.trim()) {
+                alert("يرجى كتابة أو لصق نص أولاً!");
+                return;
+            }
+            scriptLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            renderLinesList();
+            if (scriptLines.length > 0) {
+                setActiveLine(0);
+            }
+        });
+
+        function renderLinesList() {
+            linesList.innerHTML = '';
+            scriptLines.forEach((line, index) => {
+                const item = document.createElement('div');
+                item.className = 'line-item' + (index === activeLineIndex ? ' active' : '');
+                item.innerText = `${index + 1}. ${line}`;
+                item.addEventListener('click', () => setActiveLine(index));
+                linesList.appendChild(item);
+            });
+        }
+
+        function setActiveLine(index) {
+            if (index < 0 || index >= scriptLines.length) return;
+            activeLineIndex = index;
+            
+            // تحديث العناصر النشطة بالقائمة
+            const items = linesList.querySelectorAll('.line-item');
+            items.forEach((item, idx) => {
+                if (idx === index) item.classList.add('active');
+                else item.classList.remove('active');
+            });
+
+            const currentRawLine = scriptLines[index];
+            const parsed = parseLineTags(currentRawLine);
+            
+            activeLineIndicator.innerText = `السطر النشط: ${index + 1} / ${scriptLines.length}`;
+            statusBar.innerText = `🎯 السطر النشط الحالي: "${parsed.text}" [النمط: ${parsed.style.name}]`;
+            
+            // تحديد النمط تلقائياً في السليكتور بناءً على الـ Tag
+            const styleIdx = styles.findIndex(s => s.id === parsed.style.id);
+            if (styleIdx !== -1) {
+                styleSelector.value = styleIdx;
+                loadSelectedStyleToInputs();
+            }
+        }
+
+        // دالة كشف التاغات (Tags) وتحديد النمط آلياً
+        function parseLineTags(rawText) {
+            let cleanText = rawText;
+            let matchedStyle = styles[0]; // النمط الافتراضي أول نمط
+
+            for (let style of styles) {
+                if (style.prefix) {
+                    const tagPattern1 = `[${style.prefix}]`;
+                    const tagPattern2 = `${style.prefix}:`;
+                    if (cleanText.startsWith(tagPattern1)) {
+                        matchedStyle = style;
+                        cleanText = cleanText.substring(tagPattern1.length).trim();
+                        break;
+                    } else if (cleanText.startsWith(tagPattern2)) {
+                        matchedStyle = style;
+                        cleanText = cleanText.substring(tagPattern2.length).trim();
+                        break;
+                    }
+                }
+            }
+            return { text: cleanText, style: matchedStyle };
+        }
+
+        prevLineBtn.addEventListener('click', () => {
+            if (activeLineIndex > 0) setActiveLine(activeLineIndex - 1);
+        });
+
+        nextLineBtn.addEventListener('click', () => {
+            if (activeLineIndex < scriptLines.length - 1) setActiveLine(activeLineIndex + 1);
+        });
+
+        textScaleSlider.addEventListener('input', (e) => {
+            textScaleVal.innerText = e.target.value;
+        });
+
+        // === محرك التفاف النص التلقائي وتوسيطه داخل مربع التحديد ===
+        function drawTypesetTextOnCanvas(text, style, scale, onlyText) {
+            if (minX === Infinity || maxX === -Infinity || minY === Infinity || maxY === -Infinity) return;
+            
+            saveState();
+
+            // 1. تبييض الخلفية أولاً إذا اختار المستخدم خيار تبييض وكتابة
+            if (!onlyText) {
+                whitenSelectedArea();
+            }
+
+            const x = minX;
+            const y = minY;
+            const w = maxX - minX + 1;
+            const h = maxY - minY + 1;
+
+            ctx.save();
+
+            // إعدادات الخط والنمط النشط
+            const fontSize = Math.round((style.fontSize || 16) * scale);
+            const fontStyle = `${style.italic ? 'italic ' : ''}${style.bold ? 'bold ' : ''}`;
+            const fontFamily = style.fontFamily || 'Arial';
+            ctx.font = `${fontStyle}${fontSize}px ${fontFamily}`;
+            ctx.fillStyle = style.textColor || '#000000';
+            ctx.textAlign = style.align || 'center';
+            ctx.textBaseline = 'middle';
+
+            // ميكانيكية حساب السطور والالتفاف التلقائي
+            const words = text.split(' ');
+            const lines = [];
+            let currentLine = '';
+
+            for (let n = 0; n < words.length; n++) {
+                let testLine = currentLine + words[n] + ' ';
+                let metrics = ctx.measureText(testLine.trim());
+                let testWidth = metrics.width;
+                if (testWidth > w && n > 0) {
+                    lines.push(currentLine.trim());
+                    currentLine = words[n] + ' ';
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            lines.push(currentLine.trim());
+
+            // حساب الارتفاع الرأسي الكلي للنصوص
+            const lineHeight = fontSize * 1.25;
+            const totalTextHeight = lines.length * lineHeight;
+            
+            // نقطة البداية الرأسية لتوسيط النص داخل مربع التحديد تماماً
+            let startY = y + (h - totalTextHeight) / 2 + lineHeight / 2;
+
+            lines.forEach((line, index) => {
+                let drawX = x;
+                if (style.align === 'center') drawX = x + w / 2;
+                else if (style.align === 'right') drawX = x + w;
+                
+                ctx.fillText(line, drawX, startY + (index * lineHeight));
+            });
+
+            ctx.restore();
+
+            // حفظ التغييرات الحالية
+            currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            resetSelection();
+            ctx.putImageData(currentImageData, 0, 0);
+
+            // الانتقال التلقائي للسطر التالي تيسيراً للعمل
+            if (activeLineIndex < scriptLines.length - 1) {
+                setActiveLine(activeLineIndex + 1);
+            } else {
+                statusBar.innerText = "🎉 تم الانتهاء من تبييب وطباعة جميع الأسطر في النص المكتوب!";
+            }
+        }
+
+        // أزرار طباعة النصوص المحددة
+        typesetWhitenBtn.addEventListener('click', () => {
+            if (activeLineIndex === -1) return;
+            const parsed = parseLineTags(scriptLines[activeLineIndex]);
+            const scale = parseFloat(textScaleSlider.value);
+            drawTypesetTextOnCanvas(parsed.text, parsed.style, scale, false);
+        });
+
+        typesetOnlyBtn.addEventListener('click', () => {
+            if (activeLineIndex === -1) return;
+            const parsed = parseLineTags(scriptLines[activeLineIndex]);
+            const scale = parseFloat(textScaleSlider.value);
+            drawTypesetTextOnCanvas(parsed.text, parsed.style, scale, true);
+        });
+
+        // === تحميل واستقبال الماوس واللمس للتحديد ومزامنة الأزرار مع لوحة الطباعة ===
+        function showPreviewSelection() {
+            if (!currentImageData) return;
+            const tempImageData = new ImageData(new Uint8ClampedArray(currentImageData.data), canvas.width, canvas.height);
+            const tempData = tempImageData.data;
+
+            for (let i = 0; i < globalSelectedIndices.length; i++) {
+                const idx = globalSelectedIndices[i];
+                tempData[idx] = Math.floor(tempData[idx] * 0.2);       
+                tempData[idx + 1] = Math.floor(tempData[idx + 1] * 0.3 + 80); 
+                tempData[idx + 2] = 255; 
+                tempData[idx + 3] = 255; 
+            }
+            ctx.putImageData(tempImageData, 0, 0);
+
+            if (globalSelectedIndices.length > 0) {
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+                ctx.setLineDash([]);
+            }
+
+            const hasSelection = globalSelectedIndices.length > 0;
+            [whitenBtn, aiInpaintBtn, clearSelectionBtn].forEach(btn => btn.disabled = !hasSelection);
+            
+            // تفعيل أزرار طباعة النصوص لـ TypeR عند وجود سطر تفاعلي نشط وتحديد بالصورة
+            const hasActiveLine = activeLineIndex !== -1;
+            typesetWhitenBtn.disabled = !(hasSelection && hasActiveLine);
+            typesetOnlyBtn.disabled = !(hasSelection && hasActiveLine);
+        }
+
+        // تحسين تحميل الصورة
+        upload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            statusBar.innerText = "⏳ جاري تحميل الصورة...";
+            const reader = new FileReader();
+            
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // تصفير المحفوظات
+                    undoStack = [];
+                    redoStack = [];
+                    updateUndoRedoButtons();
+
+                    resetSelection();
+                    adjustDefaultZoom();
+                    setActiveTool('wand');
+                    statusBar.innerText = `✅ تم تحميل الصورة: ${img.width}×${img.height} بكسل`;
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!currentImageData) return;
+            const rect = canvas.getBoundingClientRect();
+            startX = Math.floor((e.clientX - rect.left) / zoomScale);
+            startY = Math.floor((e.clientY - rect.top) / zoomScale);
+            currentX = startX;
+            currentY = startY;
+            isDrawing = true;
+
+            if (activeTool === 'lasso') {
+                lassoPoints = [[startX, startY]];
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            currentX = Math.floor((e.clientX - rect.left) / zoomScale);
+            currentY = Math.floor((e.clientY - rect.top) / zoomScale);
+
+            if (activeTool === 'box') {
+                drawPreviewWithBoxGuide();
+            } else if (activeTool === 'lasso') {
+                lassoPoints.push([currentX, currentY]);
+                drawPreviewWithLassoGuide();
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (!isDrawing) return;
+            isDrawing = false;
+
+            if (activeTool === 'wand') {
+                const tolerance = parseInt(toleranceSlider.value, 10);
+                selectBubbleWithText(startX, startY, tolerance);
+            } else if (activeTool === 'box') {
+                addBoxToSelection(startX, startY, currentX, currentY);
+            } else if (activeTool === 'lasso') {
+                addLassoToSelection();
+            }
+        });
+
+        function addBoxToSelection(x1, y1, x2, y2) {
+            const bx1 = Math.max(0, Math.min(x1, x2));
+            const bx2 = Math.min(canvas.width - 1, Math.max(x1, x2));
+            const by1 = Math.max(0, Math.min(y1, y2));
+            const by2 = Math.min(canvas.height - 1, Math.max(y1, y2));
+
+            for (let y = by1; y <= by2; y++) {
+                for (let x = bx1; x <= bx2; x++) {
+                    const idx = y * canvas.width + x;
+                    if (globalSelectedMap[idx] === 0) {
+                        globalSelectedMap[idx] = 1;
+                        globalSelectedIndices.push(idx * 4);
+                        updateBoundingBox(x, y);
+                    }
+                }
+            }
+            showPreviewSelection();
+        }
+
+        function addLassoToSelection() {
+            if (lassoPoints.length < 3) {
+                showPreviewSelection();
+                return;
+            }
+
+            let lMinX = canvas.width, lMaxX = 0, lMinY = canvas.height, lMaxY = 0;
+            for (let p of lassoPoints) {
+                lMinX = Math.min(lMinX, p[0]);
+                lMaxX = Math.max(lMaxX, p[0]);
+                lMinY = Math.min(lMinY, p[1]);
+                lMaxY = Math.max(lMaxY, p[1]);
+            }
+            lMinX = Math.max(0, Math.floor(lMinX));
+            lMaxX = Math.min(canvas.width - 1, Math.ceil(lMaxX));
+            lMinY = Math.max(0, Math.floor(lMinY));
+            lMaxY = Math.min(canvas.height - 1, Math.ceil(lMaxY));
+
+            const w = lMaxX - lMinX + 1;
+            const h = lMaxY - lMinY + 1;
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = w;
+            tempCanvas.height = h;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCtx.fillStyle = 'black';
+            tempCtx.fillRect(0, 0, w, h);
+
+            tempCtx.fillStyle = 'white';
+            tempCtx.beginPath();
+            tempCtx.moveTo(lassoPoints[0][0] - lMinX, lassoPoints[0][1] - lMinY);
+            for (let i = 1; i < lassoPoints.length; i++) {
+                tempCtx.lineTo(lassoPoints[i][0] - lMinX, lassoPoints[i][1] - lMinY);
+            }
+            tempCtx.closePath();
+            tempCtx.fill();
+
+            const imgData = tempCtx.getImageData(0, 0, w, h);
+            const data = imgData.data;
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const idx = (y * w + x) * 4;
+                    if (data[idx] > 128) {
+                        const gx = lMinX + x;
+                        const gy = lMinY + y;
+                        const globalIdx = gy * canvas.width + gx;
+                        if (globalSelectedMap[globalIdx] === 0) {
+                            globalSelectedMap[globalIdx] = 1;
+                            globalSelectedIndices.push(globalIdx * 4);
+                            updateBoundingBox(gx, gy);
+                        }
+                    }
+                }
+            }
+            showPreviewSelection();
+        }
+
+        function selectBubbleWithText(startX, startY, tolerance) {
+            const width = canvas.width;
+            const height = canvas.height;
+            const data = currentImageData.data;
+
+            const targetIdx = (startY * width + startX) * 4;
+            const targetR = data[targetIdx];
+            const targetG = data[targetIdx + 1];
+            const targetB = data[targetIdx + 2];
+
+            if (targetR < 50 && targetG < 50 && targetB < 50) {
+                statusBar.innerText = "⚠️ تنبيه: نقرت على بكسل داكن للغاية. يرجى النقر على الخلفية البيضاء للفقاعة.";
+                showPreviewSelection();
+                return;
+            }
+
+            const localSelection = [];
+            const visited = new Uint8Array(width * height);
+            const stack = [[startX, startY]];
+            let lMinX = startX, lMaxX = startX, lMinY = startY, lMaxY = startY;
+
+            while (stack.length > 0) {
+                const [cx, cy] = stack.pop();
+                const pos = cy * width + cx;
+
+                if (visited[pos]) continue;
+                visited[pos] = 1;
+
+                const idx = pos * 4;
+                const dr = Math.abs(data[idx] - targetR);
+                const dg = Math.abs(data[idx + 1] - targetG);
+                const db = Math.abs(data[idx + 2] - targetB);
+
+                if (dr < tolerance && dg < tolerance && db < tolerance) {
+                    localSelection.push(idx);
+
+                    lMinX = Math.min(lMinX, cx);
+                    lMaxX = Math.max(lMaxX, cx);
+                    lMinY = Math.min(lMinY, cy);
+                    lMaxY = Math.max(lMaxY, cy);
+
+                    if (cx > 0) stack.push([cx - 1, cy]);
+                    if (cx < width - 1) stack.push([cx + 1, cy]);
+                    if (cy > 0) stack.push([cx, cy - 1]);
+                    if (cy < height - 1) stack.push([cx, cy + 1]);
+                }
+            }
+
+            if (localSelection.length === 0) return;
+
+            const margin = 5;
+            const bMinX = Math.max(0, lMinX - margin);
+            const bMaxX = Math.min(width - 1, lMaxX + margin);
+            const bMinY = Math.max(0, lMinY - margin);
+            const bMaxY = Math.min(height - 1, lMaxY + margin);
+
+            const localW = bMaxX - bMinX + 1;
+            const localH = bMaxY - bMinY + 1;
+
+            const localMask = new Uint8Array(localW * localH);
+            const tempSelectedMap = new Uint8Array(width * height);
+            for (let i = 0; i < localSelection.length; i++) {
+                tempSelectedMap[localSelection[i] / 4] = 1;
+            }
+
+            for (let ly = 0; ly < localH; ly++) {
+                for (let lx = 0; lx < localW; lx++) {
+                    const gx = bMinX + lx;
+                    const gy = bMinY + ly;
+                    if (tempSelectedMap[gy * width + gx]) {
+                        localMask[ly * localW + lx] = 1;
+                    }
+                }
+            }
+
+            const edgeStack = [];
+            for (let lx = 0; lx < localW; lx++) { edgeStack.push([lx, 0]); edgeStack.push([lx, localH - 1]); }
+            for (let ly = 0; ly < localH; ly++) { edgeStack.push([0, ly]); edgeStack.push([localW - 1, ly]); }
+
+            const localVisited = new Uint8Array(localW * localH);
+            while (edgeStack.length > 0) {
+                const [cx, cy] = edgeStack.pop();
+                const lIdx = cy * localW + cx;
+
+                if (localVisited[lIdx] || localMask[lIdx] === 1) continue;
+                localVisited[lIdx] = 1;
+                localMask[lIdx] = 2;
+
+                if (cx > 0) edgeStack.push([cx - 1, cy]);
+                if (cx < localW - 1) edgeStack.push([cx + 1, cy]);
+                if (cy > 0) edgeStack.push([cx, cy - 1]);
+                if (cy < localH - 1) edgeStack.push([cx, cy + 1]);
+            }
+
+            for (let ly = 0; ly < localH; ly++) {
+                for (let lx = 0; lx < localW; lx++) {
+                    if (localMask[ly * localW + lx] !== 2) {
+                        const gx = bMinX + lx;
+                        const gy = bMinY + ly;
+                        const globalIdx = gy * width + gx;
+                        if (globalSelectedMap[globalIdx] === 0) {
+                            globalSelectedMap[globalIdx] = 1;
+                            globalSelectedIndices.push(globalIdx * 4);
+                            updateBoundingBox(gx, gy);
+                        }
+                    }
+                }
+            }
+            showPreviewSelection();
+        }
+
+        // === AI Inpainting ===
+        aiInpaintBtn.addEventListener('click', async () => {
+            if (globalSelectedIndices.length === 0) return;
+
+            const apiKey = document.getElementById('apiKey').value;
+            const apiEndpoint = document.getElementById('apiEndpoint').value;
+            const apiModel = document.getElementById('apiModel').value;
+            const apiPrompt = document.getElementById('apiPrompt').value;
+
+            if (!apiKey) {
+                alert("⚠️ يرجى إدخال مفتاح API أولاً في الإعدادات ⚙️");
+                return;
+            }
+
+            aiInpaintBtn.disabled = true;
+            statusBar.innerText = "🤖 جاري ترميم وإزالة النص عبر الذكاء الاصطناعي... انتظر فضلاً";
+
+            try {
+                const margin = 40;
+                const cropX = Math.max(0, minX - margin);
+                const cropY = Math.max(0, minY - margin);
+                const cropW = Math.min(canvas.width, maxX + margin) - cropX;
+                const cropH = Math.min(canvas.height, maxY + margin) - cropY;
+
+                const patchCanvas = document.createElement('canvas');
+                patchCanvas.width = cropW;
+                patchCanvas.height = cropH;
+                const patchCtx = patchCanvas.getContext('2d');
+                patchCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+                const maskCanvas = document.createElement('canvas');
+                maskCanvas.width = cropW;
+                maskCanvas.height = cropH;
+                const maskCtx = maskCanvas.getContext('2d');
+                maskCtx.fillStyle = '#000000';
+                maskCtx.fillRect(0, 0, cropW, cropH);
+
+                const maskImageData = maskCtx.getImageData(0, 0, cropW, cropH);
+                const maskData = maskImageData.data;
+
+                for (let i = 0; i < globalSelectedIndices.length; i++) {
+                    const idx = globalSelectedIndices[i];
+                    const pixelIdx = idx / 4;
+                    const gx = pixelIdx % canvas.width;
+                    const gy = Math.floor(pixelIdx / canvas.width);
+                    const lx = gx - cropX;
+                    const ly = gy - cropY;
+
+                    if (lx >= 0 && lx < cropW && ly >= 0 && ly < cropH) {
+                        const localIdx = (ly * cropW + lx) * 4;
+                        maskData[localIdx] = 255;
+                        maskData[localIdx + 1] = 255;
+                        maskData[localIdx + 2] = 255;
+                        maskData[localIdx + 3] = 255;
+                    }
+                }
+                maskCtx.putImageData(maskImageData, 0, 0);
+
+                const patchBase64 = patchCanvas.toDataURL('image/png').split(',')[1];
+                const maskBase64 = maskCanvas.toDataURL('image/png').split(',')[1];
+
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: apiModel,
+                        image: `data:image/png;base64,${patchBase64}`,
+                        mask: `data:image/png;base64,${maskBase64}`,
+                        prompt: apiPrompt,
+                        size: `${cropW}x${cropH}`
+                    })
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`خطأ من الخادم (${response.status}): ${errText.substring(0, 100)}`);
+                }
+
+                const result = await response.json();
+                let outputUrl = "";
+                
+                if (result.output) {
+                    outputUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+                } else if (result.data?.[0]?.url) {
+                    outputUrl = result.data[0].url;
+                } else if (result.data?.[0]?.b64_json) {
+                    outputUrl = "data:image/png;base64," + result.data[0].b64_json;
+                } else if (result.images?.[0]) {
+                    outputUrl = result.images[0];
+                } else {
+                    outputUrl = result.url || result.image;
+                }
+
+                if (!outputUrl) throw new Error("لم يتم العثور على صورة في رد الـ API");
+
+                const cleanPatchImg = new Image();
+                cleanPatchImg.crossOrigin = "anonymous";
+                cleanPatchImg.onload = () => {
+                    saveState();
+                    ctx.drawImage(cleanPatchImg, cropX, cropY, cropW, cropH);
+                    currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    resetSelection();
+                    aiInpaintBtn.disabled = false;
+                    statusBar.innerText = "✅ تم الترميم وإزالة النص عبر الذكاء الاصطناعي بنجاح!";
+                };
+                cleanPatchImg.src = outputUrl;
+
+            } catch (error) {
+                console.error("Inpainting Error:", error);
+                statusBar.innerText = "❌ فشلت عملية الترميم: " + error.message;
+                aiInpaintBtn.disabled = false;
+            }
+        });
+
+        // تحميل أولي لقائمة الأنماط التفاعلية
+        loadStylesIntoSelector();
+    </script>
+</body>
+</html>
